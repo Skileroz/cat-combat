@@ -5,31 +5,45 @@
   <title>Cat Combat</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-    button { font-size: 18px; padding: 10px 20px; margin: 5px; cursor: pointer; }
-    #upgrades button { display: block; margin: 10px auto; width: 280px; height: 60px; font-size: 16px; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    #container { display: flex; justify-content: center; align-items: flex-start; margin-top: 30px; gap: 50px; }
+    .upgradeColumn { display: flex; flex-direction: column; gap: 10px; }
+    #centerColumn { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    button { font-size: 18px; padding: 10px 20px; cursor: pointer; width: 250px; height: 50px; }
     button:disabled { background-color: #ccc; cursor: not-allowed; }
-    #message { position: fixed; top: 10px; right: 10px; background: #fffa; padding: 10px; border: 1px solid #333; border-radius: 5px; display: none; max-width: 300px; }
-    #passive { margin-top: 10px; font-weight: bold; }
+    #message { background: #fffa; padding: 10px; border: 1px solid #333; border-radius: 5px; display: none; max-width: 300px; text-align: center; }
+    #passive { margin-top: 10px; font-weight: bold; text-align: center; }
+    h2 { margin-bottom: 5px; text-align: center; }
   </style>
 </head>
 <body>
-  <h1>😺 Cat Combat</h1>
-  <p>Монеты: <span id="coins">0</span></p>
-  <button onclick="clickCat()">КЛИК 🐾</button>
+  <h1 style="text-align:center;">😺 Cat Combat</h1>
 
-  <h2>Улучшения</h2>
-  <div id="upgrades">
-    <button id="btnClaws" onclick="buyUpgrade('claws')">Когти (+1 клик) — 10 монет</button>
-    <button onclick="buyUpgrade('toy')">Игрушка (+2 клик) — 50 монет</button>
-    <button onclick="buyUpgrade('mischief')">Пакость (+5 клик) — 200 монет</button>
-    <button id="btnGuardDog" onclick="buyUpgrade('guardDog')">🐶 Сторож Бобик (пассивный доход +1/сек) — 100 монет</button>
-    <button id="btnCatPet" onclick="buyUpgrade('catPet')">🐱 Мурка (пассивный доход +2/сек) — 250 монет</button>
-    <button id="btnHuskyPet" onclick="buyUpgrade('huskyPet')">🐕 Хаски (пассивный доход +3/сек) — 500 монет</button>
+  <div id="container">
+    <!-- Левый столбик: базовые улучшения -->
+    <div class="upgradeColumn" id="basicUpgrades">
+      <h2>Улучшения</h2>
+      <button id="btnClaws" onclick="buyUpgrade('claws')">Когти (+1 клик) — 10 монет</button>
+      <button onclick="buyUpgrade('toy')">Игрушка (+2 клик) — 50 монет</button>
+      <button onclick="buyUpgrade('mischief')">Пакость (+5 клик) — 200 монет</button>
+    </div>
+
+    <!-- Центр: кнопка клика, счёт и уведомления -->
+    <div id="centerColumn">
+      <p>Монеты: <span id="coins">0</span></p>
+      <button onclick="clickCat()">КЛИК 🐾</button>
+      <div id="message"></div>
+      <div id="passive">Заработок в секунду: <span id="pps">0</span></div>
+    </div>
+
+    <!-- Правый столбик: питомцы -->
+    <div class="upgradeColumn" id="petsSection">
+      <h2>Питомцы</h2>
+      <button id="btnGuardDog" onclick="buyUpgrade('guardDog')">🐶 Сторож Бобик (+1/сек) — 100 монет</button>
+      <button id="btnCatPet" onclick="buyUpgrade('catPet')">🐱 Мурка (+2/сек) — 250 монет</button>
+      <button id="btnHuskyPet" onclick="buyUpgrade('huskyPet')">🐕 Хаски (+3/сек) — 500 монет</button>
+    </div>
   </div>
-
-  <div id="passive">Заработок в секунду: <span id="pps">0</span></div>
-  <div id="message"></div>
 
   <script>
     const tg = window.Telegram.WebApp;
@@ -77,15 +91,10 @@
 
         if (upgrades[name] >= upgradeMax[name]) disableButton(name);
 
-        if (name === 'guardDog') {
-          showMessage(`🐶 Сторож Бобик куплен! О себе: неплохой друг, но если пролезть через забор — табличка «Осторожно, злая собака» оправдает ожидание.`);
-        } else if (name === 'catPet') {
-          showMessage(`🐱 Мурка куплена! Любит мурлыкать и увеличивает пассивный доход.`);
-        } else if (name === 'huskyPet') {
-          showMessage(`🐕 Хаски куплен! Сильный питомец, даёт больше пассивного дохода.`);
-        } else {
-          showMessage(`${getUpgradeName(name)} куплено!`);
-        }
+        if (name === 'guardDog') showMessage(`🐶 Сторож Бобик куплен!`);
+        else if (name === 'catPet') showMessage(`🐱 Мурка куплена!`);
+        else if (name === 'huskyPet') showMessage(`🐕 Хаски куплен!`);
+        else showMessage(`${getUpgradeName(name)} куплено!`);
 
         updatePPS();
       } else {
@@ -106,12 +115,7 @@
     }
 
     function disableButton(name) {
-      const btnMap = {
-        claws: btnClaws,
-        guardDog: btnGuardDog,
-        catPet: btnCatPet,
-        huskyPet: btnHuskyPet
-      };
+      const btnMap = { claws: btnClaws, guardDog: btnGuardDog, catPet: btnCatPet, huskyPet: btnHuskyPet };
       if (btnMap[name]) {
         btnMap[name].disabled = true;
         btnMap[name].innerText = `${getUpgradeName(name)} — Куплено`;
@@ -145,14 +149,13 @@
       updatePPS();
     }, 1000);
 
-    // Отключаем кнопки при загрузке, если апгрейд уже макс
+    // Деактивация кнопок при максе
     ['claws','guardDog','catPet','huskyPet'].forEach(disableButton);
-
-    // Обновляем PPS при загрузке
     updatePPS();
 
   </script>
 </body>
 </html>
+
 
 

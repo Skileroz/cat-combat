@@ -4,61 +4,23 @@
 <meta charset="UTF-8">
 <title>Cat Combat - Полная версия</title>
 <style>
-body {
-  font-family: 'Arial', sans-serif;
-  margin:0; padding:0;
-  background: #FFE5B4;
-  overflow:hidden;
-}
+body { font-family: 'Arial', sans-serif; margin:0; padding:0; background: #FFE5B4; overflow:hidden; }
 h1,h2,h3 { color:#8B4000; text-align:center; }
 #container { display:flex; justify-content:center; align-items:flex-start; gap:40px; margin-top:20px; position:relative; z-index:1; }
-
 .column { display:flex; flex-direction: column; gap:10px; min-width:200px; }
-
 #centerColumn { display:flex; flex-direction: column; align-items:center; gap:10px; min-width:250px; }
-
-button {
-  background-color:#FF8C00; border:2px solid #FF8C00; border-radius:10px;
-  padding:12px 25px; font-size:18px; color:white; cursor:pointer; text-align:center; font-weight:bold;
-  box-shadow:0 4px #CC7000; transition: transform 0.2s, background 0.2s;
-}
+button { background-color:#FF8C00; border:2px solid #FF8C00; border-radius:10px; padding:12px 25px; font-size:18px; color:white; cursor:pointer; text-align:center; font-weight:bold; box-shadow:0 4px #CC7000; transition: transform 0.2s, background 0.2s; }
 button:hover { transform: scale(1.05); background-color:#FFA500; }
 button:active { box-shadow:0 2px #CC7000; transform: translateY(2px); }
 button:disabled { background-color:#FFB266; border:2px solid #FFB266; cursor:not-allowed; }
-
-#message {
-  background: rgba(255,140,0,0.2); color:#8B4000;
-  padding:10px; border-radius:10px; display:none; max-width:300px; text-align:center; font-weight:bold;
-  box-shadow:0 2px 5px rgba(0,0,0,0.2);
-}
-
-#miniGame {
-  display:none; position:relative; width:300px; height:300px;
-  border:2px dashed #FF8C00; margin-top:10px; border-radius:15px;
-  background: rgba(255,140,0,0.1);
-}
-
-.flyingAnimal {
-  position:absolute; width:50px; height:50px; opacity:0.2;
-  pointer-events:none; transition: transform 0.1s linear; font-size:36px; z-index:0;
-}
-
-#registrationScreen {
-  position:fixed; top:0; left:0; width:100%; height:100%;
-  background: rgba(255,200,150,0.95); display:flex; justify-content:center;
-  align-items:center; flex-direction:column; z-index:10; padding:20px;
-}
-#nicknameInput {
-  padding:12px; font-size:18px; border-radius:10px; border:2px solid #FF8C00; margin-top:10px; width:200px; text-align:center;
-}
-#registerBtn {
-  background-color:#FF8C00; border-radius:10px; padding:12px 25px;
-  font-size:18px; color:white; font-weight:bold; margin-top:10px; cursor:pointer;
-  box-shadow:0 4px #CC7000; transition: transform 0.2s, background 0.2s;
-}
+#message { background: rgba(255,140,0,0.2); color:#8B4000; padding:10px; border-radius:10px; display:none; max-width:300px; text-align:center; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.2); }
+#miniGame { display:none; position:relative; width:300px; height:300px; border:2px dashed #FF8C00; margin-top:10px; border-radius:15px; background: rgba(255,140,0,0.1); }
+.flyingAnimal { position:absolute; width:50px; height:50px; opacity:0.2; pointer-events:none; transition: transform 0.1s linear; font-size:36px; z-index:0; }
+#registrationScreen { position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,200,150,0.95); display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:10; padding:20px; }
+#nicknameInput { padding:12px; font-size:18px; border-radius:10px; border:2px solid #FF8C00; margin-top:10px; width:200px; text-align:center; }
+#registerBtn { background-color:#FF8C00; border-radius:10px; padding:12px 25px; font-size:18px; color:white; font-weight:bold; margin-top:10px; cursor:pointer; box-shadow:0 4px #CC7000; transition: transform 0.2s, background 0.2s; }
 #registerBtn:hover { background-color:#FFA500; transform: scale(1.05); }
 #registerBtn:active { box-shadow:0 2px #CC7000; transform: translateY(2px); }
-
 input.feedbackInput { padding:8px; width:180px; border-radius:8px; border:2px solid #FF8C00; }
 </style>
 </head>
@@ -143,6 +105,17 @@ const message = document.getElementById("message");
 const upgradeBaseCost={claws:10,toy:50,mischief:200,guardDog:100,catPet:250,huskyPet:500};
 const upgradePower={claws:1,toy:2,mischief:5,guardDog:1,catPet:2,huskyPet:3};
 const upgradeMax={claws:5,toy:5,mischief:5,guardDog:5,catPet:5,huskyPet:5};
+
+// ======== Проверка ник при загрузке ========
+window.onload = function() {
+  const existingNick = localStorage.getItem("userNickname");
+  if(existingNick){
+    document.getElementById("registrationScreen").style.display = "none";
+    initGame();
+  } else {
+    document.getElementById("registrationScreen").style.display = "flex";
+  }
+}
 
 // ======== Регистрация ========
 function registerUser(){

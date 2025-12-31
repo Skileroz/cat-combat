@@ -1,164 +1,238 @@
-
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Cat Combat</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <title>Cat Combat - Полная версия</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-    #container { display: flex; justify-content: center; align-items: flex-start; margin-top: 30px; gap: 50px; }
-    .upgradeColumn { display: flex; flex-direction: column; gap: 10px; }
-    #centerColumn { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    button { font-size: 18px; padding: 10px 20px; cursor: pointer; width: 250px; height: 50px; text-align: left; }
+    body { font-family: Arial; margin: 0; padding: 0; text-align: center; }
+    #container { display: flex; justify-content: center; align-items: flex-start; gap: 50px; margin-top: 20px; }
+    .upgradeColumn { display: flex; flex-direction: column; gap: 10px; min-width: 200px; }
+    #centerColumn { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 250px; }
+    button { padding: 10px 20px; font-size: 18px; cursor: pointer; text-align: left; }
     button:disabled { background-color: #ccc; cursor: not-allowed; }
-    #message { background: #fffa; padding: 10px; border: 1px solid #333; border-radius: 5px; display: none; max-width: 300px; text-align: center; }
-    #passive { margin-top: 10px; font-weight: bold; text-align: center; }
-    h2 { margin-bottom: 5px; text-align: center; }
+    #message { background: #fffa; padding: 10px; border-radius: 5px; display: none; max-width: 300px; margin-top: 10px; }
+    #miniGame { display: none; position: relative; width: 300px; height: 300px; border:1px solid #000; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h1 style="text-align:center;">😺 Cat Combat</h1>
+  <h1>😺 Cat Combat - Полная версия</h1>
 
   <div id="container">
-    <!-- Левый столбик: базовые улучшения -->
-    <div class="upgradeColumn" id="basicUpgrades">
-      <h2>Улучшения</h2>
-      <button id="btnClaws" onclick="buyUpgrade('claws')">🗡 Когти (+1 клик) — 10 монет</button>
-      <button id="btnToy" onclick="buyUpgrade('toy')">🎾 Игрушка (+2 клик) — 50 монет</button>
-      <button id="btnMischief" onclick="buyUpgrade('mischief')">😈 Пакость (+5 клик) — 200 монет</button>
+
+    <!-- Столбик 1: Задания -->
+    <div class="upgradeColumn" id="missions">
+      <h2>Задания</h2>
+      <button onclick="completeMission('click50')">50 кликов за 1 минуту</button>
+      <button onclick="completeMission('buyPet')">Купить питомца</button>
+      <button onclick="completeMission('upgradeMax')">Прокачать апгрейд до макс</button>
     </div>
 
-    <!-- Центр: кнопка клика, счёт и уведомления -->
+    <!-- Столбик 2: Апгрейды -->
+    <div class="upgradeColumn" id="basicUpgrades">
+      <h2>Улучшения</h2>
+      <button id="btnClaws" onclick="buyUpgrade('claws')">🗡 Когти (+1 клик)</button>
+      <button id="btnToy" onclick="buyUpgrade('toy')">🎾 Игрушка (+2 клик)</button>
+      <button id="btnMischief" onclick="buyUpgrade('mischief')">😈 Пакость (+5 клик)</button>
+    </div>
+
+    <!-- Столбик 3: Центр -->
     <div id="centerColumn">
       <p>Монеты: <span id="coins">0</span></p>
+      <p>Энергия: <span id="energy">20</span>/20</p>
       <button onclick="clickCat()">КЛИК 🐾</button>
       <div id="message"></div>
       <div id="passive">Заработок в секунду: <span id="pps">0</span></div>
+      <button onclick="startMiniGame()">🎮 Мини-игра</button>
+      <div id="miniGame"></div>
     </div>
 
-    <!-- Правый столбик: питомцы -->
+    <!-- Столбик 4: Питомцы -->
     <div class="upgradeColumn" id="petsSection">
       <h2>Питомцы</h2>
-      <button id="btnGuardDog" onclick="buyUpgrade('guardDog')">🐶 Сторож Бобик (+1/сек) — 100 монет</button>
-      <button id="btnCatPet" onclick="buyUpgrade('catPet')">🐱 Мурка (+2/сек) — 250 монет</button>
-      <button id="btnHuskyPet" onclick="buyUpgrade('huskyPet')">🐕 Хаски (+3/сек) — 500 монет</button>
+      <button id="btnGuardDog" onclick="buyUpgrade('guardDog')">🐶 Сторож Бобик (+1/сек)</button>
+      <button id="btnCatPet" onclick="buyUpgrade('catPet')">🐱 Мурка (+2/сек)</button>
+      <button id="btnHuskyPet" onclick="buyUpgrade('huskyPet')">🐕 Хаски (+3/сек)</button>
     </div>
+
   </div>
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
+<script>
+// ======== Данные ========
+let coins = Number(localStorage.getItem("coins") || 0);
+let upgrades = JSON.parse(localStorage.getItem("upgrades") || '{"claws":0,"toy":0,"mischief":0,"guardDog":0,"catPet":0,"huskyPet":0}');
+let clickMultiplier = 1;
+let passiveBonus = 0;
+let nextClickBonus = 0;
+let maxEnergy = 20;
+let energy = maxEnergy;
 
-    let coins = Number(localStorage.getItem("coins") || 0);
-    let upgrades = JSON.parse(localStorage.getItem("upgrades") || '{"claws":0,"toy":0,"mischief":0,"guardDog":0,"catPet":0,"huskyPet":0}');
+const coinDisplay = document.getElementById("coins");
+const energyDisplay = document.getElementById("energy");
+const ppsDisplay = document.getElementById("pps");
+const message = document.getElementById("message");
 
-    const upgradeCosts = { claws: 10, toy: 50, mischief: 200, guardDog: 100, catPet: 250, huskyPet: 500 };
-    const upgradePower = { claws: 1, toy: 2, mischief: 5, guardDog: 1, catPet: 2, huskyPet: 3 };
-    const upgradeMax = { claws: 5, toy: 5, mischief: 5, guardDog: 5, catPet: 5, huskyPet: 5 };
+const upgradeBaseCost = { claws:10, toy:50, mischief:200, guardDog:100, catPet:250, huskyPet:500 };
+const upgradePower = { claws:1, toy:2, mischief:5, guardDog:1, catPet:2, huskyPet:3 };
+const upgradeMax = { claws:5, toy:5, mischief:5, guardDog:5, catPet:5, huskyPet:5 };
 
-    const coinDisplay = document.getElementById("coins");
-    const btnClaws = document.getElementById("btnClaws");
-    const btnToy = document.getElementById("btnToy");
-    const btnMischief = document.getElementById("btnMischief");
-    const btnGuardDog = document.getElementById("btnGuardDog");
-    const btnCatPet = document.getElementById("btnCatPet");
-    const btnHuskyPet = document.getElementById("btnHuskyPet");
-    const message = document.getElementById("message");
-    const ppsDisplay = document.getElementById("pps");
+coinDisplay.innerText = coins;
+energyDisplay.innerText = energy;
 
+// ======== Функции ========
+function getUpgradeCost(name){
+  return Math.floor(upgradeBaseCost[name]*Math.pow(2,upgrades[name]));
+}
+
+function clickCat(){
+  if(energy <= 0){
+    showMessage("⚡ Нет энергии для клика!");
+    return;
+  }
+  let totalPower = (1 + upgrades.claws*upgradePower.claws + upgrades.toy*upgradePower.toy + upgrades.mischief*upgradePower.mischief)*clickMultiplier + nextClickBonus;
+  coins += totalPower;
+  nextClickBonus = 0;
+  energy--;
+  coinDisplay.innerText = coins;
+  energyDisplay.innerText = energy;
+  saveData();
+}
+
+function buyUpgrade(name){
+  if(upgrades[name]>=upgradeMax[name]){
+    showMessage("✅ Максимум достигнут");
+    disableButton(name);
+    return;
+  }
+  let cost = getUpgradeCost(name);
+  if(coins>=cost){
+    coins-=cost;
+    upgrades[name]++;
     coinDisplay.innerText = coins;
-
-    function clickCat() {
-      let totalPower = 1 + upgrades.claws * upgradePower.claws +
-                          upgrades.toy * upgradePower.toy +
-                          upgrades.mischief * upgradePower.mischief;
-      coins += totalPower;
-      coinDisplay.innerText = coins;
-      saveData();
-    }
-
-    function buyUpgrade(name) {
-      if (upgrades[name] >= upgradeMax[name]) {
-        showMessage(`${getUpgradeName(name)} уже прокачано!`);
-        disableButton(name);
-        return;
-      }
-
-      let cost = upgradeCosts[name];
-      if (coins >= cost) {
-        coins -= cost;
-        upgrades[name]++;
-        coinDisplay.innerText = coins;
-        saveData();
-
-        if (upgrades[name] >= upgradeMax[name]) disableButton(name);
-
-        if (name === 'guardDog') showMessage(`🐶 Сторож Бобик куплен!`);
-        else if (name === 'catPet') showMessage(`🐱 Мурка куплена!`);
-        else if (name === 'huskyPet') showMessage(`🐕 Хаски куплен!`);
-        else showMessage(`${getUpgradeName(name)} куплено!`);
-
-        updatePPS();
-      } else {
-        showMessage("Недостаточно монет!");
-      }
-    }
-
-    function getUpgradeName(name) {
-      switch(name) {
-        case 'claws': return '🗡 Когти';
-        case 'toy': return '🎾 Игрушка';
-        case 'mischief': return '😈 Пакость';
-        case 'guardDog': return '🐶 Сторож Бобик';
-        case 'catPet': return '🐱 Мурка';
-        case 'huskyPet': return '🐕 Хаски';
-        default: return name;
-      }
-    }
-
-    function disableButton(name) {
-      const btnMap = { claws: btnClaws, toy: btnToy, mischief: btnMischief, guardDog: btnGuardDog, catPet: btnCatPet, huskyPet: btnHuskyPet };
-      if (btnMap[name]) {
-        btnMap[name].disabled = true;
-        btnMap[name].innerText = `${getUpgradeName(name)} — Куплено`;
-      }
-    }
-
-    function saveData() {
-      localStorage.setItem("coins", coins);
-      localStorage.setItem("upgrades", JSON.stringify(upgrades));
-    }
-
-    function showMessage(text) {
-      message.innerText = text;
-      message.style.display = "block";
-      setTimeout(() => message.style.display = "none", 4000);
-    }
-
-    function updatePPS() {
-      let pps = upgrades.guardDog*upgradePower.guardDog + upgrades.catPet*upgradePower.catPet + upgrades.huskyPet*upgradePower.huskyPet;
-      ppsDisplay.innerText = pps;
-    }
-
-    // Пассивный доход каждые 1 секунду
-    setInterval(() => {
-      let passive = upgrades.guardDog*upgradePower.guardDog + upgrades.catPet*upgradePower.catPet + upgrades.huskyPet*upgradePower.huskyPet;
-      if (passive > 0) {
-        coins += passive;
-        coinDisplay.innerText = coins;
-        saveData();
-      }
-      updatePPS();
-    }, 1000);
-
-    // Деактивация всех кнопок при загрузке, если прокачано
-    ['claws','toy','mischief','guardDog','catPet','huskyPet'].forEach(disableButton);
+    saveData();
+    showMessage(`${getUpgradeName(name)} куплено!`);
+    if(upgrades[name]>=upgradeMax[name]) disableButton(name);
     updatePPS();
+  } else showMessage("Недостаточно монет!");
+}
 
-  </script>
+function getUpgradeName(name){
+  switch(name){
+    case 'claws': return '🗡 Когти';
+    case 'toy': return '🎾 Игрушка';
+    case 'mischief': return '😈 Пакость';
+    case 'guardDog': return '🐶 Сторож Бобик';
+    case 'catPet': return '🐱 Мурка';
+    case 'huskyPet': return '🐕 Хаски';
+    default: return name;
+  }
+}
+
+function disableButton(name){
+  const btnMap = { claws:btnClaws, toy:btnToy, mischief:btnMischief, guardDog:btnGuardDog, catPet:btnCatPet, huskyPet:btnHuskyPet};
+  if(upgrades[name]>=upgradeMax[name]){
+    btnMap[name].disabled=true;
+    btnMap[name].innerText = getUpgradeName(name) + " — Куплено";
+  }
+}
+
+function saveData(){
+  localStorage.setItem("coins",coins);
+  localStorage.setItem("upgrades",JSON.stringify(upgrades));
+}
+
+function showMessage(text){
+  message.innerText=text;
+  message.style.display="block";
+  setTimeout(()=>message.style.display="none",4000);
+}
+
+function updatePPS(){
+  let pps = upgrades.guardDog*upgradePower.guardDog + upgrades.catPet*upgradePower.catPet + upgrades.huskyPet*upgradePower.huskyPet + passiveBonus;
+  ppsDisplay.innerText = pps;
+}
+
+// ======== Пассивный доход ========
+setInterval(()=>{
+  let passive = upgrades.guardDog*upgradePower.guardDog + upgrades.catPet*upgradePower.catPet + upgrades.huskyPet*upgradePower.huskyPet + passiveBonus;
+  coins+=passive;
+  coinDisplay.innerText=coins;
+  saveData();
+  updatePPS();
+},1000);
+
+// ======== Восстановление энергии ========
+setInterval(()=>{
+  if(energy<maxEnergy){ energy++; energyDisplay.innerText=energy; }
+},1000);
+
+// ======== Случайные события ========
+setInterval(()=>{
+  if(Math.random()<0.4) randomEvent();
+},30000);
+
+function randomEvent(){
+  const events = [
+    {text:"🐭 Котёнок нашёл монеты +50", action:()=>coins+=50},
+    {text:"⚡ Всплеск энергии! Клики ×2 на 10 секунд", action:()=>{
+      clickMultiplier=2; setTimeout(()=>clickMultiplier=1,10000);
+    }},
+    {text:"🎉 Пассивный доход ×2 на 15 секунд", action:()=>{
+      passiveBonus = upgrades.guardDog+upgrades.catPet+upgrades.huskyPet;
+      setTimeout(()=>passiveBonus=0,15000);
+    }},
+    {text:"💎 Драгоценный камень +200", action:()=>coins+=200},
+    {text:"🔥 Следующий клик +50 монет", action:()=>nextClickBonus=50}
+  ];
+  const e = events[Math.floor(Math.random()*events.length)];
+  e.action();
+  showMessage(e.text);
+}
+
+// ======== Мини-игра ========
+function startMiniGame(){
+  let miniCoins = 0;
+  const game = document.getElementById("miniGame");
+  game.innerHTML=""; game.style.display="block";
+  const mouse=document.createElement("div");
+  mouse.innerText="🐭"; mouse.style.position="absolute"; mouse.style.fontSize="24px";
+  game.appendChild(mouse);
+
+  function moveMouse(){ mouse.style.top=Math.random()*260+"px"; mouse.style.left=Math.random()*260+"px"; }
+  moveMouse();
+
+  mouse.onclick=()=>{ miniCoins+=10; moveMouse(); }
+
+  setTimeout(()=>{
+    game.style.display="none";
+    coins+=miniCoins; coinDisplay.innerText=coins; saveData();
+    showMessage(`🎉 Мини-игра окончена! +${miniCoins} монет`);
+  },10000);
+}
+
+// ======== Миссии/задания ========
+function completeMission(name){
+  switch(name){
+    case 'click50':
+      showMessage("Задание: Сделай 50 кликов — +100 монет");
+      coins += 100; coinDisplay.innerText = coins;
+      break;
+    case 'buyPet':
+      showMessage("Задание: Купи питомца — +200 монет");
+      coins += 200; coinDisplay.innerText = coins;
+      break;
+    case 'upgradeMax':
+      showMessage("Задание: Прокачай апгрейд до макс — +300 монет");
+      coins += 300; coinDisplay.innerText = coins;
+      break;
+  }
+  saveData();
+}
+
+// ======== Деактивация кнопок при максимуме ========
+['claws','toy','mischief','guardDog','catPet','huskyPet'].forEach(disableButton);
+updatePPS();
+</script>
 </body>
 </html>
-
 
 

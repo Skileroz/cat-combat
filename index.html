@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -9,7 +10,7 @@
     #container { display: flex; justify-content: center; align-items: flex-start; margin-top: 30px; gap: 50px; }
     .upgradeColumn { display: flex; flex-direction: column; gap: 10px; }
     #centerColumn { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    button { font-size: 18px; padding: 10px 20px; cursor: pointer; width: 250px; height: 50px; }
+    button { font-size: 18px; padding: 10px 20px; cursor: pointer; width: 250px; height: 50px; text-align: left; }
     button:disabled { background-color: #ccc; cursor: not-allowed; }
     #message { background: #fffa; padding: 10px; border: 1px solid #333; border-radius: 5px; display: none; max-width: 300px; text-align: center; }
     #passive { margin-top: 10px; font-weight: bold; text-align: center; }
@@ -23,9 +24,9 @@
     <!-- Левый столбик: базовые улучшения -->
     <div class="upgradeColumn" id="basicUpgrades">
       <h2>Улучшения</h2>
-      <button id="btnClaws" onclick="buyUpgrade('claws')">Когти (+1 клик) — 10 монет</button>
-      <button onclick="buyUpgrade('toy')">Игрушка (+2 клик) — 50 монет</button>
-      <button onclick="buyUpgrade('mischief')">Пакость (+5 клик) — 200 монет</button>
+      <button id="btnClaws" onclick="buyUpgrade('claws')">🗡 Когти (+1 клик) — 10 монет</button>
+      <button id="btnToy" onclick="buyUpgrade('toy')">🎾 Игрушка (+2 клик) — 50 монет</button>
+      <button id="btnMischief" onclick="buyUpgrade('mischief')">😈 Пакость (+5 клик) — 200 монет</button>
     </div>
 
     <!-- Центр: кнопка клика, счёт и уведомления -->
@@ -58,6 +59,8 @@
 
     const coinDisplay = document.getElementById("coins");
     const btnClaws = document.getElementById("btnClaws");
+    const btnToy = document.getElementById("btnToy");
+    const btnMischief = document.getElementById("btnMischief");
     const btnGuardDog = document.getElementById("btnGuardDog");
     const btnCatPet = document.getElementById("btnCatPet");
     const btnHuskyPet = document.getElementById("btnHuskyPet");
@@ -104,18 +107,18 @@
 
     function getUpgradeName(name) {
       switch(name) {
-        case 'claws': return 'Когти';
-        case 'toy': return 'Игрушка';
-        case 'mischief': return 'Пакость';
-        case 'guardDog': return 'Сторож Бобик';
-        case 'catPet': return 'Мурка';
-        case 'huskyPet': return 'Хаски';
+        case 'claws': return '🗡 Когти';
+        case 'toy': return '🎾 Игрушка';
+        case 'mischief': return '😈 Пакость';
+        case 'guardDog': return '🐶 Сторож Бобик';
+        case 'catPet': return '🐱 Мурка';
+        case 'huskyPet': return '🐕 Хаски';
         default: return name;
       }
     }
 
     function disableButton(name) {
-      const btnMap = { claws: btnClaws, guardDog: btnGuardDog, catPet: btnCatPet, huskyPet: btnHuskyPet };
+      const btnMap = { claws: btnClaws, toy: btnToy, mischief: btnMischief, guardDog: btnGuardDog, catPet: btnCatPet, huskyPet: btnHuskyPet };
       if (btnMap[name]) {
         btnMap[name].disabled = true;
         btnMap[name].innerText = `${getUpgradeName(name)} — Куплено`;
@@ -149,8 +152,8 @@
       updatePPS();
     }, 1000);
 
-    // Деактивация кнопок при максе
-    ['claws','guardDog','catPet','huskyPet'].forEach(disableButton);
+    // Деактивация всех кнопок при загрузке, если прокачано
+    ['claws','toy','mischief','guardDog','catPet','huskyPet'].forEach(disableButton);
     updatePPS();
 
   </script>

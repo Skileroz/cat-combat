@@ -17,37 +17,24 @@ button:disabled { background-color:#FFB266; border:2px solid #FFB266; cursor:not
 #miniGame { display:none; position:relative; width:300px; height:300px; border:2px dashed #FF8C00; margin-top:10px; border-radius:15px; background: rgba(255,140,0,0.1); }
 .flyingAnimal { position:absolute; width:50px; height:50px; opacity:0.2; pointer-events:none; transition: transform 0.1s linear; font-size:36px; z-index:0; }
 input.feedbackInput { padding:8px; width:180px; border-radius:8px; border:2px solid #FF8C00; }
-#catEmoji { position:absolute; font-size:80px; top:50px; left:50%; transform:translateX(-50%); z-index:5; }
+#catOverlay { position:absolute; top:0; left:0; width:100%; height:100%; background:white; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:10; transition: opacity 1s ease; }
+#catEmoji { font-size:80px; margin-bottom:20px; }
 #backgroundText { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:100px; color:rgba(255,140,0,0.2); pointer-events:none; z-index:0; }
 </style>
 </head>
 <body>
 
-<div id="catEmoji">🐱</div>
-<div id="backgroundText">Cat Combat</div>
+<!-- Оверлей с котом и текстом "Добро пожаловать" -->
+<div id="catOverlay">
+    <div id="catEmoji">🐱</div>
+    <h1>Добро пожаловать в игру!</h1>
+</div>
 
-<h1 style="position:relative; z-index:1;">Добро пожаловать в игру!</h1>
+<div id="backgroundText">Cat Combat</div>
 
 <div id="container">
 
-  <div class="column" id="leftColumn">
-    <div id="profileSection">
-      <h3>👤 Профиль игрока</h3>
-      <p>Код: <span id="profileCode">—</span></p>
-      <p>Монеты: <span id="profileCoins">0</span></p>
-      <p>Пассивный доход/сек: <span id="profilePPS">0</span></p>
-    </div>
-
-    <h3>💡 Предложка</h3>
-    <input type="text" id="feedbackInput" class="feedbackInput" placeholder="Напиши идею">
-    <button onclick="sendFeedback()">Отправить</button>
-    
-    <h2>Улучшения</h2>
-    <button id="btnClaws" onclick="buyUpgrade('claws')">🗡 Когти (+1 клик)</button>
-    <button id="btnToy" onclick="buyUpgrade('toy')">🎾 Игрушка (+2 клик)</button>
-    <button id="btnMischief" onclick="buyUpgrade('mischief')">😈 Пакость (+5 клик)</button>
-  </div>
-
+  <!-- Центр: кликер -->
   <div id="centerColumn">
     <p>Монеты: <span id="coins">0</span></p>
     <p>Энергия: <span id="energy">20</span>/20</p>
@@ -65,6 +52,15 @@ input.feedbackInput { padding:8px; width:180px; border-radius:8px; border:2px so
     <div id="miniGame"></div>
   </div>
 
+  <!-- Правый столбик 1: улучшения -->
+  <div class="column" id="upgradesSection">
+    <h2>Улучшения</h2>
+    <button id="btnClaws" onclick="buyUpgrade('claws')">🗡 Когти (+1 клик)</button>
+    <button id="btnToy" onclick="buyUpgrade('toy')">🎾 Игрушка (+2 клик)</button>
+    <button id="btnMischief" onclick="buyUpgrade('mischief')">😈 Пакость (+5 клик)</button>
+  </div>
+
+  <!-- Правый столбик 2: питомцы -->
   <div class="column" id="petsSection">
     <h2>Питомцы</h2>
     <button id="btnGuardDog" onclick="buyUpgrade('guardDog')">🐶 Сторож Бобик (+1/сек)</button>
@@ -75,21 +71,16 @@ input.feedbackInput { padding:8px; width:180px; border-radius:8px; border:2px so
 </div>
 
 <script>
-// ======== Код аккаунта с сохранением ========
-function generateCode(){ const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ"; return "1234"+letters[Math.floor(Math.random()*letters.length)]; }
-if(!localStorage.getItem("userCode")) localStorage.setItem("userCode", generateCode());
-const userCode = localStorage.getItem("userCode");
+// ======== Код аккаунта фиксирован 1234J ========
+const userCode = "1234J";
+localStorage.setItem("userCode", userCode);
 
-// ======== Анимация кота ========
-const cat = document.getElementById("catEmoji");
-let catDirection = 1;
-setInterval(()=>{
-  let top = parseInt(cat.style.top);
-  if(top>=100) catDirection=-1;
-  if(top<=30) catDirection=1;
-  cat.style.top = (top + catDirection*1.5) + "px";
-  cat.style.transform = `translateX(-50%) rotate(${Math.sin(Date.now()/200)*10}deg)`;
-},20);
+// ======== Оверлей с котом ========
+const catOverlay = document.getElementById("catOverlay");
+setTimeout(()=>{
+    catOverlay.style.opacity = 0;
+    setTimeout(()=>{ catOverlay.style.display = "none"; },1000);
+}, 3000);
 
 // ======== Данные с localStorage ========
 let coins = Number(localStorage.getItem("coins") || 0);
@@ -154,7 +145,7 @@ function showMessage(msg){
     setTimeout(()=>{ message.style.display="none"; },2000);
 }
 
-// ======== Заглушки функций (апгрейды, мини-игра, питомцы, предложка) ========
+// ======== Заглушки функций ========
 function buyUpgrade(upg){ 
     if(upgrades[upg]>=upgradeMax[upg]){ showMessage("Куплено!"); return; }
     let cost = upgradeBaseCost[upg]*(upgrades[upg]+1);
@@ -166,7 +157,7 @@ function disableButton(upg){
 }
 function sendFeedback(){ 
     let val = document.getElementById("feedbackInput").value; 
-    if(val) showMessage("Идея отправлена!");
+    if(val) showMessage("Идея отправлена игроку 1234J!");
 }
 function startMiniGame(diff){ showMessage("Мини-игра: "+diff);}
 function showMiniGameDifficulty(){ document.getElementById("miniGameDifficulty").style.display="block"; }

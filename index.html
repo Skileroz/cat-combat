@@ -36,7 +36,7 @@ input.feedbackInput { padding:8px; width:180px; border-radius:8px; border:2px so
   <div class="column" id="leftColumn">
     <div id="profileSection">
       <h3>👤 Профиль игрока</h3>
-      <p>Код: <span id="profileCode">—</span></p>
+      <p>Код: <span id="profileCode">1234J</span></p>
       <p>Монеты: <span id="profileCoins">0</span></p>
       <p>Пассивный доход/сек: <span id="profilePPS">0</span></p>
     </div>
@@ -72,66 +72,24 @@ input.feedbackInput { padding:8px; width:180px; border-radius:8px; border:2px so
 
 </div>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script>
-// ======== Firebase конфигурация ========
-const firebaseConfig = {
-  apiKey: "ВАШ_API_KEY",
-  authDomain: "ВАШ_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://ВАШ_PROJECT_ID.firebaseio.com",
-  projectId: "ВАШ_PROJECT_ID",
-  storageBucket: "ВАШ_PROJECT_ID.appspot.com",
-  messagingSenderId: "ВАШ_SENDER_ID",
-  appId: "ВАШ_APP_ID"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-// ======== Главный профиль ========
-const userCode = "1234J";
-
 // ======== Данные ========
-let coins = 0;
-let upgrades = {claws:0,toy:0,mischief:0,guardDog:0,catPet:0,huskyPet:0};
-let passiveIncome=0;
-
-// ======== Стоимость улучшений ========
+let coins = Number(localStorage.getItem("coins") || 0);
+let upgrades = JSON.parse(localStorage.getItem("upgrades") || '{"claws":0,"toy":0,"mischief":0,"guardDog":0,"catPet":0,"huskyPet":0}');
 const upgradeBaseCost = {claws:10, toy:50, mischief:200, guardDog:100, catPet:250, huskyPet:500};
 
 // ======== HTML элементы ========
 const coinDisplay = document.getElementById("coins");
 const profileCoins = document.getElementById("profileCoins");
 const profilePPS = document.getElementById("profilePPS");
-const profileCode = document.getElementById("profileCode");
 const message = document.getElementById("message");
 
-// ======== Загрузка данных ========
-function loadData(){
-  db.ref('players/'+userCode).once('value').then(snapshot=>{
-    if(snapshot.exists()){
-      const data = snapshot.val();
-      coins = data.coins || 0;
-      upgrades = data.upgrades || upgrades;
-      passiveIncome = calculatePassive();
-      updateDisplay();
-    } else {
-      db.ref('players/'+userCode).set({coins:0, upgrades:upgrades});
-      passiveIncome = calculatePassive();
-    }
+// ======== Инициализация ========
+function initGame(){
+    updateDisplay();
     updateButtonCosts();
-  });
 }
-
-// ======== Обновление экрана ========
-function updateDisplay(){
-  coinDisplay.innerText = coins;
-  profileCoins.innerText = coins;
-  profilePPS.innerText = passiveIncome;
-  profileCode.innerText = userCode;
-}
+initGame();
 
 // ======== Пассивный доход ========
 function calculatePassive(){
@@ -148,18 +106,17 @@ function clickCat(){
 
 // ======== Апгрейды ========
 function buyUpgrade(upg){
-  let cost = upgradeBaseCost[upg] * ((upgrades[upg]||0)+1);
-  if(coins < cost){ showMessage("Недостаточно монет!"); return; }
+  const cost = upgradeBaseCost[upg] * ((upgrades[upg]||0)+1);
+  if(coins<cost){ showMessage("Недостаточно монет!"); return; }
   coins -= cost;
-  upgrades[upg] = (upgrades[upg]||0) + 1;
-  passiveIncome = calculatePassive();
-  saveData();
-  showMessage(upg + " куплено!");
+  upgrades[upg] = (upgrades[upg]||0)+1;
   updateDisplay();
   updateButtonCosts();
+  saveData();
+  showMessage(upg + " куплено!");
 }
 
-// ======== Обновление стоимости на кнопках ========
+// ======== Обновление стоимости кнопок ========
 function updateButtonCosts(){
   document.getElementById("costClaws").innerText = upgradeBaseCost.claws*((upgrades.claws||0)+1);
   document.getElementById("costToy").innerText = upgradeBaseCost.toy*((upgrades.toy||0)+1);
@@ -171,7 +128,8 @@ function updateButtonCosts(){
 
 // ======== Сохранение данных ========
 function saveData(){
-  db.ref('players/'+userCode).set({coins:coins, upgrades:upgrades});
+  localStorage.setItem("coins", coins);
+  localStorage.setItem("upgrades", JSON.stringify(upgrades));
 }
 
 // ======== Сообщения ========
@@ -186,11 +144,12 @@ function sendFeedback(){
   if(val) showMessage("Идея отправлена игроку 1234J!");
 }
 
-// ======== Оверлей с котом ========
-const catOverlay = document.getElementById("catOverlay");
-setTimeout(()=>{ catOverlay.style.opacity=0; setTimeout(()=>catOverlay.style.display="none",1000); },3000);
-
-loadData();
+// ======== Обновление экрана ========
+function updateDisplay(){
+  coinDisplay.innerText = coins;
+  profileCoins.innerText = coins;
+  profilePPS.innerText = calculatePassive();
+}
 </script>
 
 </body>

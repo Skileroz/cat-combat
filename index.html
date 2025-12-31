@@ -57,17 +57,17 @@ input.feedbackInput { padding:8px; width:180px; border-radius:8px; border:2px so
   <!-- Правый столбик 1: улучшения -->
   <div class="column" id="upgradesSection">
     <h2>Улучшения</h2>
-    <button id="btnClaws" onclick="buyUpgrade('claws')">🗡 Когти (+1 клик)</button>
-    <button id="btnToy" onclick="buyUpgrade('toy')">🎾 Игрушка (+2 клик)</button>
-    <button id="btnMischief" onclick="buyUpgrade('mischief')">😈 Пакость (+5 клик)</button>
+    <button id="btnClaws" onclick="buyUpgrade('claws')">🗡 Когти (+1 клик) — <span id="costClaws">10</span>💰</button>
+    <button id="btnToy" onclick="buyUpgrade('toy')">🎾 Игрушка (+2 клик) — <span id="costToy">50</span>💰</button>
+    <button id="btnMischief" onclick="buyUpgrade('mischief')">😈 Пакость (+5 клик) — <span id="costMischief">200</span>💰</button>
   </div>
 
   <!-- Правый столбик 2: питомцы -->
   <div class="column" id="petsSection">
     <h2>Питомцы</h2>
-    <button id="btnGuardDog" onclick="buyUpgrade('guardDog')">🐶 Сторож Бобик (+1/сек)</button>
-    <button id="btnCatPet" onclick="buyUpgrade('catPet')">🐱 Мурка (+2/сек)</button>
-    <button id="btnHuskyPet" onclick="buyUpgrade('huskyPet')">🐕 Хаски (+3/сек)</button>
+    <button id="btnGuardDog" onclick="buyUpgrade('guardDog')">🐶 Сторож Бобик (+1/сек) — <span id="costGuardDog">100</span>💰</button>
+    <button id="btnCatPet" onclick="buyUpgrade('catPet')">🐱 Мурка (+2/сек) — <span id="costCatPet">250</span>💰</button>
+    <button id="btnHuskyPet" onclick="buyUpgrade('huskyPet')">🐕 Хаски (+3/сек) — <span id="costHuskyPet">500</span>💰</button>
   </div>
 
 </div>
@@ -98,6 +98,9 @@ let coins = 0;
 let upgrades = {claws:0,toy:0,mischief:0,guardDog:0,catPet:0,huskyPet:0};
 let passiveIncome=0;
 
+// ======== Стоимость улучшений ========
+const upgradeBaseCost = {claws:10, toy:50, mischief:200, guardDog:100, catPet:250, huskyPet:500};
+
 // ======== HTML элементы ========
 const coinDisplay = document.getElementById("coins");
 const profileCoins = document.getElementById("profileCoins");
@@ -118,6 +121,7 @@ function loadData(){
       db.ref('players/'+userCode).set({coins:0, upgrades:upgrades});
       passiveIncome = calculatePassive();
     }
+    updateButtonCosts();
   });
 }
 
@@ -144,11 +148,25 @@ function clickCat(){
 
 // ======== Апгрейды ========
 function buyUpgrade(upg){
+  let cost = upgradeBaseCost[upg] * ((upgrades[upg]||0)+1);
+  if(coins < cost){ showMessage("Недостаточно монет!"); return; }
+  coins -= cost;
   upgrades[upg] = (upgrades[upg]||0) + 1;
   passiveIncome = calculatePassive();
   saveData();
   showMessage(upg + " куплено!");
   updateDisplay();
+  updateButtonCosts();
+}
+
+// ======== Обновление стоимости на кнопках ========
+function updateButtonCosts(){
+  document.getElementById("costClaws").innerText = upgradeBaseCost.claws*((upgrades.claws||0)+1);
+  document.getElementById("costToy").innerText = upgradeBaseCost.toy*((upgrades.toy||0)+1);
+  document.getElementById("costMischief").innerText = upgradeBaseCost.mischief*((upgrades.mischief||0)+1);
+  document.getElementById("costGuardDog").innerText = upgradeBaseCost.guardDog*((upgrades.guardDog||0)+1);
+  document.getElementById("costCatPet").innerText = upgradeBaseCost.catPet*((upgrades.catPet||0)+1);
+  document.getElementById("costHuskyPet").innerText = upgradeBaseCost.huskyPet*((upgrades.huskyPet||0)+1);
 }
 
 // ======== Сохранение данных ========

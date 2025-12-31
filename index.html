@@ -141,18 +141,18 @@
         coins += passive;
         coinDisplay.innerText = coins;
         saveData();
-        updatePPS();
       }
+      updatePPS();
     }, 1000);
 
     // Отключаем кнопки при загрузке, если апгрейд уже макс
-    if (upgrades.claws >= upgradeMax.claws) disableButton('claws');
-    if (upgrades.guardDog >= upgradeMax.guardDog) disableButton('guardDog');
-    if (upgrades.catPet >= upgradeMax.catPet) disableButton('catPet');
-    if (upgrades.huskyPet >= upgradeMax.huskyPet) disableButton('huskyPet');
+    ['claws','guardDog','catPet','huskyPet'].forEach(disableButton);
 
+    // Обновляем PPS при загрузке
     updatePPS();
+
   </script>
 </body>
 </html>
+
 

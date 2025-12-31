@@ -7,7 +7,8 @@
   <style>
     body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
     button { font-size: 18px; padding: 10px 20px; margin: 5px; cursor: pointer; }
-    #upgrades button { display: block; margin: 10px auto; }
+    #upgrades button { display: block; margin: 10px auto; width: 250px; height: 60px; font-size: 16px; }
+    button:disabled { background-color: #ccc; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -17,9 +18,10 @@
 
   <h2>Улучшения</h2>
   <div id="upgrades">
-    <button onclick="buyUpgrade('claws')">Когти (+1 клик) — 10 монет</button>
+    <button id="btnClaws" onclick="buyUpgrade('claws')">Когти (+1 клик) — 10 монет</button>
     <button onclick="buyUpgrade('toy')">Игрушка (+2 клик) — 50 монет</button>
     <button onclick="buyUpgrade('mischief')">Пакость (+5 клик) — 200 монет</button>
+    <button id="btnGuardDog" onclick="buyUpgrade('guardDog')">🐶 Сторож Бобик (пассивный доход +1/сек) — 100 монет</button>
   </div>
 
   <script>
@@ -27,39 +29,79 @@
     tg.ready();
 
     let coins = Number(localStorage.getItem("coins") || 0);
-    let upgrades = JSON.parse(localStorage.getItem("upgrades") || '{"claws":0,"toy":0,"mischief":0}');
+    let upgrades = JSON.parse(localStorage.getItem("upgrades") || '{"claws":0,"toy":0,"mischief":0,"guardDog":0}');
 
-    const upgradeCosts = { claws: 10, toy: 50, mischief: 200 };
-    const upgradePower = { claws: 1, toy: 2, mischief: 5 };
+    const upgradeCosts = { claws: 10, toy: 50, mischief: 200, guardDog: 100 };
+    const upgradePower = { claws: 1, toy: 2, mischief: 5, guardDog: 1 };
+    const upgradeMax = { claws: 5, toy: 5, mischief: 5, guardDog: 5 };
 
-    document.getElementById("coins").innerText = coins;
+    const coinDisplay = document.getElementById("coins");
+    const btnClaws = document.getElementById("btnClaws");
+    const btnGuardDog = document.getElementById("btnGuardDog");
+
+    coinDisplay.innerText = coins;
 
     function clickCat() {
       let totalPower = 1 + upgrades.claws * upgradePower.claws +
                           upgrades.toy * upgradePower.toy +
                           upgrades.mischief * upgradePower.mischief;
       coins += totalPower;
-      document.getElementById("coins").innerText = coins;
+      coinDisplay.innerText = coins;
       saveData();
     }
 
     function buyUpgrade(name) {
+      if (upgrades[name] >= upgradeMax[name]) {
+        alert("Улучшение уже прокачано до максимума!");
+        disableButton(name);
+        return;
+      }
+
       let cost = upgradeCosts[name];
       if (coins >= cost) {
         coins -= cost;
         upgrades[name]++;
-        alert(`Вы купили улучшение: ${name}! Теперь ваш клик даёт больше монет.`);
-        document.getElementById("coins").innerText = coins;
+        coinDisplay.innerText = coins;
         saveData();
+
+        if (upgrades[name] >= upgradeMax[name]) disableButton(name);
+
+        if (name === 'guardDog') {
+          alert(
+            "Вы купили питомца 🐶 Сторож Бобик!\n\n" +
+            "О себе: неплохой друг, но если пролезть через забор — табличка «Осторожно, злая собака» оправдает ожидание."
+          );
+        } else {
+          alert(`Вы купили улучшение: ${name}!`);
+        }
       } else {
         alert("Недостаточно монет!");
       }
+    }
+
+    function disableButton(name) {
+      if (name === 'claws') btnClaws.disabled = true;
+      if (name === 'guardDog') btnGuardDog.disabled = true;
     }
 
     function saveData() {
       localStorage.setItem("coins", coins);
       localStorage.setItem("upgrades", JSON.stringify(upgrades));
     }
+
+    // Пассивный доход каждые 1 секунду
+    setInterval(() => {
+      let passive = upgrades.guardDog * upgradePower.guardDog;
+      if (passive > 0) {
+        coins += passive;
+        coinDisplay.innerText = coins;
+        saveData();
+      }
+    }, 1000);
+
+    // Отключаем кнопки при загрузке, если апгрейд уже макс
+    if (upgrades.claws >= upgradeMax.claws) btnClaws.disabled = true;
+    if (upgrades.guardDog >= upgradeMax.guardDog) btnGuardDog.disabled = true;
   </script>
 </body>
 </html>

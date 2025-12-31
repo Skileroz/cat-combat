@@ -4,17 +4,19 @@
 <meta charset="UTF-8">
 <title>Cat Combat - Полная версия</title>
 <style>
-/* ======== Основной стиль ======== */
 body {
   font-family: 'Arial', sans-serif;
   margin:0; padding:0;
   background: #FFE5B4;
   overflow:hidden;
 }
-h1,h2 { color:#8B4000; text-align:center; }
+h1,h2,h3 { color:#8B4000; text-align:center; }
 #container { display:flex; justify-content:center; align-items:flex-start; gap:40px; margin-top:20px; position:relative; z-index:1; }
-.upgradeColumn, #petsSection { display:flex; flex-direction: column; gap:10px; min-width:200px; }
+
+.column { display:flex; flex-direction: column; gap:10px; min-width:200px; }
+
 #centerColumn { display:flex; flex-direction: column; align-items:center; gap:10px; min-width:250px; }
+
 button {
   background-color:#FF8C00; border:2px solid #FF8C00; border-radius:10px;
   padding:12px 25px; font-size:18px; color:white; cursor:pointer; text-align:center; font-weight:bold;
@@ -23,20 +25,24 @@ button {
 button:hover { transform: scale(1.05); background-color:#FFA500; }
 button:active { box-shadow:0 2px #CC7000; transform: translateY(2px); }
 button:disabled { background-color:#FFB266; border:2px solid #FFB266; cursor:not-allowed; }
+
 #message {
   background: rgba(255,140,0,0.2); color:#8B4000;
   padding:10px; border-radius:10px; display:none; max-width:300px; text-align:center; font-weight:bold;
   box-shadow:0 2px 5px rgba(0,0,0,0.2);
 }
+
 #miniGame {
   display:none; position:relative; width:300px; height:300px;
   border:2px dashed #FF8C00; margin-top:10px; border-radius:15px;
   background: rgba(255,140,0,0.1);
 }
+
 .flyingAnimal {
   position:absolute; width:50px; height:50px; opacity:0.2;
   pointer-events:none; transition: transform 0.1s linear; font-size:36px; z-index:0;
 }
+
 #registrationScreen {
   position:fixed; top:0; left:0; width:100%; height:100%;
   background: rgba(255,200,150,0.95); display:flex; justify-content:center;
@@ -53,13 +59,12 @@ button:disabled { background-color:#FFB266; border:2px solid #FFB266; cursor:not
 #registerBtn:hover { background-color:#FFA500; transform: scale(1.05); }
 #registerBtn:active { box-shadow:0 2px #CC7000; transform: translateY(2px); }
 
-/* Мини-игра: выбор сложности */
-#miniGameDifficulty { display:none; flex-direction:column; align-items:center; gap:10px; margin-top:10px; }
+input.feedbackInput { padding:8px; width:180px; border-radius:8px; border:2px solid #FF8C00; }
 </style>
 </head>
 <body>
 
-<!-- ======== Экран регистрации ======== -->
+<!-- Экран регистрации -->
 <div id="registrationScreen">
   <h2>⚠️ ВНИМАНИЕ ⚠️</h2>
   <p style="max-width:400px; text-align:center; font-weight:bold;">
@@ -76,22 +81,25 @@ button:disabled { background-color:#FFB266; border:2px solid #FFB266; cursor:not
 
 <h1 style="position:relative; z-index:1;">😺 Cat Combat - Полная версия</h1>
 
-<!-- ======== Контейнер с апгрейдами, центром и питомцами ======== -->
 <div id="container">
 
-  <!-- Апгрейды -->
-  <div class="upgradeColumn" id="basicUpgrades">
+  <!-- Левый столбик: предложка + апгрейды -->
+  <div class="column">
+    <h3>💡 Предложка</h3>
+    <input type="text" id="feedbackInput" class="feedbackInput" placeholder="Напиши идею">
+    <button onclick="sendFeedback()">Отправить</button>
+    
     <h2>Улучшения</h2>
     <button id="btnClaws" onclick="buyUpgrade('claws')">🗡 Когти (+1 клик)</button>
     <button id="btnToy" onclick="buyUpgrade('toy')">🎾 Игрушка (+2 клик)</button>
     <button id="btnMischief" onclick="buyUpgrade('mischief')">😈 Пакость (+5 клик)</button>
   </div>
 
-  <!-- Центр -->
+  <!-- Центр: кликер + мини-игра -->
   <div id="centerColumn">
     <p>Монеты: <span id="coins">0</span></p>
     <p>Энергия: <span id="energy">20</span>/20</p>
-    <button onclick="showMiniGameDifficulty()">КЛИК 🐾</button>
+    <button onclick="clickCat()">КЛИК 🐾</button>
     <div id="message"></div>
     <div id="passive">Заработок в секунду: <span id="pps">0</span></div>
     <div id="miniGameDifficulty">
@@ -101,12 +109,12 @@ button:disabled { background-color:#FFB266; border:2px solid #FFB266; cursor:not
       <button onclick="startMiniGame('hard')">3️⃣ Сложная</button>
       <button onclick="startMiniGame('rofl')">4️⃣ Рофл-мастер</button>
     </div>
-    <button onclick="startMiniGame('easy')">🎮 Мини-игра</button>
+    <button onclick="showMiniGameDifficulty()">🎮 Мини-игра</button>
     <div id="miniGame"></div>
   </div>
 
-  <!-- Питомцы -->
-  <div class="upgradeColumn" id="petsSection">
+  <!-- Правый столбик: питомцы -->
+  <div class="column" id="petsSection">
     <h2>Питомцы</h2>
     <button id="btnGuardDog" onclick="buyUpgrade('guardDog')">🐶 Сторож Бобик (+1/сек)</button>
     <button id="btnCatPet" onclick="buyUpgrade('catPet')">🐱 Мурка (+2/сек)</button>
@@ -116,6 +124,14 @@ button:disabled { background-color:#FFB266; border:2px solid #FFB266; cursor:not
 </div>
 
 <script>
+// ======== Привязка кнопок ========
+const btnClaws = document.getElementById('btnClaws');
+const btnToy = document.getElementById('btnToy');
+const btnMischief = document.getElementById('btnMischief');
+const btnGuardDog = document.getElementById('btnGuardDog');
+const btnCatPet = document.getElementById('btnCatPet');
+const btnHuskyPet = document.getElementById('btnHuskyPet');
+
 // ======== Данные ========
 let coins = Number(localStorage.getItem("coins") || 0);
 let upgrades = JSON.parse(localStorage.getItem("upgrades") || '{"claws":0,"toy":0,"mischief":0,"guardDog":0,"catPet":0,"huskyPet":0}');
@@ -132,7 +148,7 @@ const upgradeMax={claws:5,toy:5,mischief:5,guardDog:5,catPet:5,huskyPet:5};
 function registerUser(){
   const nickname = document.getElementById("nicknameInput").value.trim();
   if(!nickname){ alert("Введите ник!"); return; }
-  if(localStorage.getItem("userNickname")){ alert("На этом устройстве уже зарегистрирован аккаунт. Смена ника невозможна."); return; }
+  if(localStorage.getItem("userNickname")){ alert("На этом устройстве уже зарегистрирован аккаунт."); return; }
   localStorage.setItem("userNickname", nickname);
   alert(`Аккаунт "${nickname}" успешно зарегистрирован!`);
   document.getElementById("registrationScreen").style.display="none";
@@ -147,39 +163,27 @@ function initGame(){
   ['claws','toy','mischief','guardDog','catPet','huskyPet'].forEach(disableButton);
 }
 
-// ======== Кликер с комбо ========
+// ======== Кликер ========
 function clickCat(){
-  if(energy<=0){ showMessage("⚡ Нет энергии для клика!"); return; }
-  let now = Date.now();
+  if(energy<=0){ showMessage("⚡ Нет энергии!"); return; }
+  let now=Date.now();
   clickTimes.push(now);
   clickTimes=clickTimes.filter(t=>now-t<=2000);
-  if(clickTimes.length>=3 && !comboActive){
-    comboActive=true; clickMultiplier*=2; showMessage("🔥 Комбо! Клики ×2 на 5 секунд");
-    setTimeout(()=>{ clickMultiplier/=2; comboActive=false; },5000);
-    clickTimes=[];
-  }
+  if(clickTimes.length>=3 && !comboActive){ comboActive=true; clickMultiplier*=2; showMessage("🔥 Комбо!"); setTimeout(()=>{clickMultiplier/=2; comboActive=false;},5000); clickTimes=[]; }
   let totalPower=(1+upgrades.claws*upgradePower.claws+upgrades.toy*upgradePower.toy+upgrades.mischief*upgradePower.mischief)*clickMultiplier+nextClickBonus;
   coins+=totalPower; nextClickBonus=0; energy--; coinDisplay.innerText=coins; energyDisplay.innerText=energy; saveData();
 }
 
 // ======== Апгрейды ========
 function buyUpgrade(name){
-  if(upgrades[name]>=upgradeMax[name]){ showMessage("✅ Максимум достигнут"); disableButton(name); return; }
+  if(upgrades[name]>=upgradeMax[name]){ showMessage("✅ Максимум"); disableButton(name); return; }
   let cost=Math.floor(upgradeBaseCost[name]*Math.pow(2,upgrades[name]));
-  if(coins>=cost){ coins-=cost; upgrades[name]++; coinDisplay.innerText=coins; saveData(); showMessage(getUpgradeName(name)+" куплено!");
-    if(upgrades[name]>=upgradeMax[name]) disableButton(name); updatePPS();
-  } else showMessage("Недостаточно монет!");
+  if(coins>=cost){ coins-=cost; upgrades[name]++; coinDisplay.innerText=coins; saveData(); showMessage(getUpgradeName(name)+" куплено!"); if(upgrades[name]>=upgradeMax[name]) disableButton(name); updatePPS(); }
+  else showMessage("Недостаточно монет!");
 }
 function getUpgradeName(name){
-  switch(name){
-    case 'claws': return '🗡 Когти';
-    case 'toy': return '🎾 Игрушка';
-    case 'mischief': return '😈 Пакость';
-    case 'guardDog': return '🐶 Сторож Бобик';
-    case 'catPet': return '🐱 Мурка';
-    case 'huskyPet': return '🐕 Хаски';
-    default: return name;
-  }
+  switch(name){ case 'claws': return '🗡 Когти'; case 'toy': return '🎾 Игрушка'; case 'mischief': return '😈 Пакость';
+  case 'guardDog': return '🐶 Сторож Бобик'; case 'catPet': return '🐱 Мурка'; case 'huskyPet': return '🐕 Хаски'; default: return name; }
 }
 function disableButton(name){
   const btnMap={claws:btnClaws,toy:btnToy,mischief:btnMischief,guardDog:btnGuardDog,catPet:btnCatPet,huskyPet:btnHuskyPet};
@@ -187,90 +191,52 @@ function disableButton(name){
 }
 function saveData(){ localStorage.setItem("coins",coins); localStorage.setItem("upgrades",JSON.stringify(upgrades)); }
 function showMessage(text){ message.innerText=text; message.style.display="block"; setTimeout(()=>message.style.display="none",4000); }
-function updatePPS(){
-  let pps = upgrades.guardDog*upgradePower.guardDog + upgrades.catPet*upgradePower.catPet + upgrades.huskyPet*upgradePower.huskyPet + passiveBonus;
-  ppsDisplay.innerText = pps;
-}
+function updatePPS(){ let pps = upgrades.guardDog*upgradePower.guardDog + upgrades.catPet*upgradePower.catPet + upgrades.huskyPet*upgradePower.huskyPet + passiveBonus; ppsDisplay.innerText=pps; }
 
 // ======== Пассивный доход ========
-setInterval(()=>{
-  let passive = upgrades.guardDog*upgradePower.guardDog + upgrades.catPet*upgradePower.catPet + upgrades.huskyPet*upgradePower.huskyPet + passiveBonus;
-  coins+=passive; coinDisplay.innerText=coins; saveData(); updatePPS();
-},1000);
-
-// ======== Восстановление энергии ========
+setInterval(()=>{ let passive=upgrades.guardDog*upgradePower.guardDog+upgrades.catPet*upgradePower.catPet+upgrades.huskyPet*upgradePower.huskyPet+passiveBonus; coins+=passive; coinDisplay.innerText=coins; saveData(); updatePPS(); },1000);
 setInterval(()=>{ if(energy<maxEnergy){ energy++; energyDisplay.innerText=energy; } },1000);
 
 // ======== Случайные события ========
 setInterval(()=>{ if(Math.random()<0.4) randomEvent(); },30000);
-function randomEvent(){
-  const events=[
-    {text:"🐭 Котёнок нашёл монеты +50", action:()=>coins+=50},
-    {text:"⚡ Всплеск энергии! Клики ×2 на 10 секунд", action:()=>{ clickMultiplier=2; setTimeout(()=>clickMultiplier=1,10000); }},
-    {text:"🎉 Пассивный доход ×2 на 15 секунд", action:()=>{ passiveBonus = upgrades.guardDog+upgrades.catPet+upgrades.huskyPet; setTimeout(()=>passiveBonus=0,15000); }},
-    {text:"💎 Драгоценный камень +200", action:()=>coins+=200},
-    {text:"🔥 Следующий клик +50 монет", action:()=>nextClickBonus=50}
-  ];
-  const e = events[Math.floor(Math.random()*events.length)];
-  e.action(); showMessage(e.text);
-}
+function randomEvent(){ const events=[{text:"🐭 Котёнок нашёл монеты +50", action:()=>coins+=50},{text:"⚡ Комбо! ×2 на 10 сек", action:()=>{ clickMultiplier=2; setTimeout(()=>clickMultiplier=1,10000); }},{text:"🎉 Пассивный доход ×2 на 15 сек", action:()=>{ passiveBonus = upgrades.guardDog+upgrades.catPet+upgrades.huskyPet; setTimeout(()=>passiveBonus=0,15000); }},{text:"💎 Камень +200", action:()=>coins+=200},{text:"🔥 Следующий клик +50", action:()=>nextClickBonus=50}]; const e = events[Math.floor(Math.random()*events.length)]; e.action(); showMessage(e.text); }
 
-// ======== Мини-игра с мышкой и сложностями ========
+// ======== Мини-игра с мышкой ========
 function showMiniGameDifficulty(){ document.getElementById("miniGameDifficulty").style.display="flex"; }
-
 function startMiniGame(level){
-  document.getElementById("miniGameDifficulty").style.display="none";
-  let miniCoins=0;
-  const game=document.getElementById("miniGame");
-  game.innerHTML=""; game.style.display="block";
-  const mouse=document.createElement("div");
-  mouse.innerText="🐭"; mouse.style.position="absolute";
+  document.getElementById("miniGameDifficulty").style.display="none"; let miniCoins=0;
+  const game=document.getElementById("miniGame"); game.innerHTML=""; game.style.display="block";
+  const mouse=document.createElement("div"); mouse.innerText="🐭"; mouse.style.position="absolute";
   let speed,size;
-  switch(level){
-    case 'easy': speed=500; size=60; break;
-    case 'medium': speed=350; size=45; break;
-    case 'hard': speed=200; size=30; break;
-    case 'rofl': speed=80; size=25; break;
-  }
+  switch(level){ case 'easy': speed=500; size=60; break; case 'medium': speed=350; size=45; break; case 'hard': speed=200; size=30; break; case 'rofl': speed=80; size=25; break; }
   mouse.style.fontSize=size+"px"; game.appendChild(mouse);
-
-  function jumpMouse(){
-    let top=Math.floor(Math.random()*(game.clientHeight-size));
-    let left=Math.floor(Math.random()*(game.clientWidth-size));
-    mouse.style.top=top+"px"; mouse.style.left=left+"px";
-  }
+  function jumpMouse(){ let top=Math.floor(Math.random()*(game.clientHeight-size)); let left=Math.floor(Math.random()*(game.clientWidth-size)); mouse.style.top=top+"px"; mouse.style.left=left+"px"; }
   jumpMouse();
   const interval=setInterval(jumpMouse, speed);
   mouse.onclick=()=>{ miniCoins+=10; jumpMouse(); }
-  setTimeout(()=>{
-    clearInterval(interval); game.style.display="none"; coins+=miniCoins; coinDisplay.innerText=coins; saveData();
-    showMessage(`🎉 Мини-игра окончена! +${miniCoins} монет`);
-  },10000);
+  setTimeout(()=>{ clearInterval(interval); game.style.display="none"; coins+=miniCoins; coinDisplay.innerText=coins; saveData(); showMessage(`🎉 Мини-игра окончена! +${miniCoins} монет`); },10000);
 }
 
 // ======== Летающие зверушки ========
 const animalImages=['🐶','🐱','🐭','🐰','🦊']; const flyingAnimals=[];
-function createFlyingAnimal(){
-  const animal=document.createElement('div'); animal.classList.add('flyingAnimal');
-  animal.innerText=animalImages[Math.floor(Math.random()*animalImages.length)];
-  document.body.appendChild(animal);
-  animal.style.top=Math.random()*window.innerHeight+'px';
-  animal.style.left=Math.random()*window.innerWidth+'px';
-  animal.dataset.angle=Math.random()*360; flyingAnimals.push(animal);
-}
+function createFlyingAnimal(){ const animal=document.createElement('div'); animal.classList.add('flyingAnimal'); animal.innerText=animalImages[Math.floor(Math.random()*animalImages.length)]; document.body.appendChild(animal); animal.style.top=Math.random()*window.innerHeight+'px'; animal.style.left=Math.random()*window.innerWidth+'px'; animal.dataset.angle=Math.random()*360; flyingAnimals.push(animal); }
 for(let i=0;i<10;i++) createFlyingAnimal();
-setInterval(()=>{
-  flyingAnimals.forEach(animal=>{
-    let top=parseFloat(animal.style.top), left=parseFloat(animal.style.left), angle=parseFloat(animal.dataset.angle);
-    top+=Math.sin(angle*Math.PI/180)*0.5; left+=Math.cos(angle*Math.PI/180)*0.5; angle+=0.5;
-    if(top>window.innerHeight) top=0; if(top<0) top=window.innerHeight;
-    if(left>window.innerWidth) left=0; if(left<0) left=window.innerWidth;
-    animal.style.top=top+'px'; animal.style.left=left+'px';
-    animal.style.transform=`rotate(${angle}deg)`; animal.dataset.angle=angle;
-  });
-},50);
+setInterval(()=>{ flyingAnimals.forEach(animal=>{ let top=parseFloat(animal.style.top), left=parseFloat(animal.style.left), angle=parseFloat(animal.dataset.angle); top+=Math.sin(angle*Math.PI/180)*0.5; left+=Math.cos(angle*Math.PI/180)*0.5; angle+=0.5; if(top>window.innerHeight) top=0; if(top<0) top=window.innerHeight; if(left>window.innerWidth) left=0; if(left<0) left=window.innerWidth; animal.style.top=top+'px'; animal.style.left=left+'px'; animal.style.transform=`rotate(${angle}deg)`; animal.dataset.angle=angle; }); },50);
+
+// ======== Предложка ========
+function sendFeedback(){
+  const feedback=document.getElementById("feedbackInput").value.trim();
+  if(!feedback){ showMessage("❌ Введите текст предложения!"); return; }
+  let feedbacks = JSON.parse(localStorage.getItem("feedbacks") || "[]");
+  feedbacks.push({from: localStorage.getItem("userNickname")||"Игрок", text: feedback, date: new Date().toLocaleString()});
+  localStorage.setItem("feedbacks", JSON.stringify(feedbacks));
+  showMessage("✅ Предложка отправлена Skileroz!");
+  document.getElementById("feedbackInput").value="";
+  console.log("Новая предложка:", feedbacks[feedbacks.length-1]);
+}
 </script>
 </body>
 </html>
+
 
 

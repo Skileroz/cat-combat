@@ -2,26 +2,63 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Cat Kombat</title>
+  <title>Cat Combat</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    button { font-size: 18px; padding: 10px 20px; margin: 5px; cursor: pointer; }
+    #upgrades button { display: block; margin: 10px auto; }
+  </style>
 </head>
 <body>
-  <h1>😺 Cat Kombat</h1>
+  <h1>😺 Cat Combat</h1>
   <p>Монеты: <span id="coins">0</span></p>
   <button onclick="clickCat()">КЛИК 🐾</button>
+
+  <h2>Улучшения</h2>
+  <div id="upgrades">
+    <button onclick="buyUpgrade('claws')">Когти (+1 клик) — 10 монет</button>
+    <button onclick="buyUpgrade('toy')">Игрушка (+2 клик) — 50 монет</button>
+    <button onclick="buyUpgrade('mischief')">Пакость (+5 клик) — 200 монет</button>
+  </div>
 
   <script>
     const tg = window.Telegram.WebApp;
     tg.ready();
 
-    let coins = localStorage.getItem("coins") || 0;
-    coins = Number(coins);
+    let coins = Number(localStorage.getItem("coins") || 0);
+    let upgrades = JSON.parse(localStorage.getItem("upgrades") || '{"claws":0,"toy":0,"mischief":0}');
+
+    const upgradeCosts = { claws: 10, toy: 50, mischief: 200 };
+    const upgradePower = { claws: 1, toy: 2, mischief: 5 };
+
     document.getElementById("coins").innerText = coins;
 
     function clickCat() {
-      coins++;
+      let totalPower = 1 + upgrades.claws * upgradePower.claws +
+                          upgrades.toy * upgradePower.toy +
+                          upgrades.mischief * upgradePower.mischief;
+      coins += totalPower;
       document.getElementById("coins").innerText = coins;
+      saveData();
+    }
+
+    function buyUpgrade(name) {
+      let cost = upgradeCosts[name];
+      if (coins >= cost) {
+        coins -= cost;
+        upgrades[name]++;
+        alert(`Вы купили улучшение: ${name}! Теперь ваш клик даёт больше монет.`);
+        document.getElementById("coins").innerText = coins;
+        saveData();
+      } else {
+        alert("Недостаточно монет!");
+      }
+    }
+
+    function saveData() {
       localStorage.setItem("coins", coins);
+      localStorage.setItem("upgrades", JSON.stringify(upgrades));
     }
   </script>
 </body>

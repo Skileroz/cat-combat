@@ -7,8 +7,10 @@
   <style>
     body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
     button { font-size: 18px; padding: 10px 20px; margin: 5px; cursor: pointer; }
-    #upgrades button { display: block; margin: 10px auto; width: 250px; height: 60px; font-size: 16px; }
+    #upgrades button { display: block; margin: 10px auto; width: 280px; height: 60px; font-size: 16px; }
     button:disabled { background-color: #ccc; cursor: not-allowed; }
+    #message { position: fixed; top: 10px; right: 10px; background: #fffa; padding: 10px; border: 1px solid #333; border-radius: 5px; display: none; max-width: 300px; }
+    #passive { margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -22,22 +24,31 @@
     <button onclick="buyUpgrade('toy')">Игрушка (+2 клик) — 50 монет</button>
     <button onclick="buyUpgrade('mischief')">Пакость (+5 клик) — 200 монет</button>
     <button id="btnGuardDog" onclick="buyUpgrade('guardDog')">🐶 Сторож Бобик (пассивный доход +1/сек) — 100 монет</button>
+    <button id="btnCatPet" onclick="buyUpgrade('catPet')">🐱 Мурка (пассивный доход +2/сек) — 250 монет</button>
+    <button id="btnHuskyPet" onclick="buyUpgrade('huskyPet')">🐕 Хаски (пассивный доход +3/сек) — 500 монет</button>
   </div>
+
+  <div id="passive">Заработок в секунду: <span id="pps">0</span></div>
+  <div id="message"></div>
 
   <script>
     const tg = window.Telegram.WebApp;
     tg.ready();
 
     let coins = Number(localStorage.getItem("coins") || 0);
-    let upgrades = JSON.parse(localStorage.getItem("upgrades") || '{"claws":0,"toy":0,"mischief":0,"guardDog":0}');
+    let upgrades = JSON.parse(localStorage.getItem("upgrades") || '{"claws":0,"toy":0,"mischief":0,"guardDog":0,"catPet":0,"huskyPet":0}');
 
-    const upgradeCosts = { claws: 10, toy: 50, mischief: 200, guardDog: 100 };
-    const upgradePower = { claws: 1, toy: 2, mischief: 5, guardDog: 1 };
-    const upgradeMax = { claws: 5, toy: 5, mischief: 5, guardDog: 5 };
+    const upgradeCosts = { claws: 10, toy: 50, mischief: 200, guardDog: 100, catPet: 250, huskyPet: 500 };
+    const upgradePower = { claws: 1, toy: 2, mischief: 5, guardDog: 1, catPet: 2, huskyPet: 3 };
+    const upgradeMax = { claws: 5, toy: 5, mischief: 5, guardDog: 5, catPet: 5, huskyPet: 5 };
 
     const coinDisplay = document.getElementById("coins");
     const btnClaws = document.getElementById("btnClaws");
     const btnGuardDog = document.getElementById("btnGuardDog");
+    const btnCatPet = document.getElementById("btnCatPet");
+    const btnHuskyPet = document.getElementById("btnHuskyPet");
+    const message = document.getElementById("message");
+    const ppsDisplay = document.getElementById("pps");
 
     coinDisplay.innerText = coins;
 
@@ -52,7 +63,7 @@
 
     function buyUpgrade(name) {
       if (upgrades[name] >= upgradeMax[name]) {
-        alert("Улучшение уже прокачано до максимума!");
+        showMessage(`${getUpgradeName(name)} уже прокачано!`);
         disableButton(name);
         return;
       }
@@ -67,21 +78,44 @@
         if (upgrades[name] >= upgradeMax[name]) disableButton(name);
 
         if (name === 'guardDog') {
-          alert(
-            "Вы купили питомца 🐶 Сторож Бобик!\n\n" +
-            "О себе: неплохой друг, но если пролезть через забор — табличка «Осторожно, злая собака» оправдает ожидание."
-          );
+          showMessage(`🐶 Сторож Бобик куплен! О себе: неплохой друг, но если пролезть через забор — табличка «Осторожно, злая собака» оправдает ожидание.`);
+        } else if (name === 'catPet') {
+          showMessage(`🐱 Мурка куплена! Любит мурлыкать и увеличивает пассивный доход.`);
+        } else if (name === 'huskyPet') {
+          showMessage(`🐕 Хаски куплен! Сильный питомец, даёт больше пассивного дохода.`);
         } else {
-          alert(`Вы купили улучшение: ${name}!`);
+          showMessage(`${getUpgradeName(name)} куплено!`);
         }
+
+        updatePPS();
       } else {
-        alert("Недостаточно монет!");
+        showMessage("Недостаточно монет!");
+      }
+    }
+
+    function getUpgradeName(name) {
+      switch(name) {
+        case 'claws': return 'Когти';
+        case 'toy': return 'Игрушка';
+        case 'mischief': return 'Пакость';
+        case 'guardDog': return 'Сторож Бобик';
+        case 'catPet': return 'Мурка';
+        case 'huskyPet': return 'Хаски';
+        default: return name;
       }
     }
 
     function disableButton(name) {
-      if (name === 'claws') btnClaws.disabled = true;
-      if (name === 'guardDog') btnGuardDog.disabled = true;
+      const btnMap = {
+        claws: btnClaws,
+        guardDog: btnGuardDog,
+        catPet: btnCatPet,
+        huskyPet: btnHuskyPet
+      };
+      if (btnMap[name]) {
+        btnMap[name].disabled = true;
+        btnMap[name].innerText = `${getUpgradeName(name)} — Куплено`;
+      }
     }
 
     function saveData() {
@@ -89,19 +123,36 @@
       localStorage.setItem("upgrades", JSON.stringify(upgrades));
     }
 
+    function showMessage(text) {
+      message.innerText = text;
+      message.style.display = "block";
+      setTimeout(() => message.style.display = "none", 4000);
+    }
+
+    function updatePPS() {
+      let pps = upgrades.guardDog*upgradePower.guardDog + upgrades.catPet*upgradePower.catPet + upgrades.huskyPet*upgradePower.huskyPet;
+      ppsDisplay.innerText = pps;
+    }
+
     // Пассивный доход каждые 1 секунду
     setInterval(() => {
-      let passive = upgrades.guardDog * upgradePower.guardDog;
+      let passive = upgrades.guardDog*upgradePower.guardDog + upgrades.catPet*upgradePower.catPet + upgrades.huskyPet*upgradePower.huskyPet;
       if (passive > 0) {
         coins += passive;
         coinDisplay.innerText = coins;
         saveData();
+        updatePPS();
       }
     }, 1000);
 
     // Отключаем кнопки при загрузке, если апгрейд уже макс
-    if (upgrades.claws >= upgradeMax.claws) btnClaws.disabled = true;
-    if (upgrades.guardDog >= upgradeMax.guardDog) btnGuardDog.disabled = true;
+    if (upgrades.claws >= upgradeMax.claws) disableButton('claws');
+    if (upgrades.guardDog >= upgradeMax.guardDog) disableButton('guardDog');
+    if (upgrades.catPet >= upgradeMax.catPet) disableButton('catPet');
+    if (upgrades.huskyPet >= upgradeMax.huskyPet) disableButton('huskyPet');
+
+    updatePPS();
   </script>
 </body>
 </html>
+
